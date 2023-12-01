@@ -20,9 +20,7 @@ fun main() {
 private fun solvePart1(input: List<String>): Int {
     val res =
         input.map { x: String ->
-            x.map { it.digitToIntOrNull() }.filterNotNull().let {
-                it.first() * 10 + it.last()
-            }
+            x.first { it.isDigit() }.digitToInt() * 10 + x.last { it.isDigit() }.digitToInt()
         }
     return res.sum()
 }
