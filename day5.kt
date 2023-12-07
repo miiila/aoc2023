@@ -1,6 +1,7 @@
 import java.io.File
 import java.math.BigInteger
 import kotlin.system.exitProcess
+import kotlin.time.measureTime
 
 private const val DAY = 5
 
@@ -15,8 +16,21 @@ fun main() {
 
 //    println(input)
     val (seeds, maps) = parseInput(input)
-    println(solvePart1(seeds, maps))
-    println(solvePart2(seeds, maps))
+    println(measureTime {
+        print("Part1: ")
+        print(solvePart1(seeds, maps))
+        print(" ")
+    })
+    println(measureTime {
+        print("Part2: ")
+        print(solvePart2(seeds, maps))
+        print(" ")
+    })
+    println(measureTime {
+        print("Part2 brute force: ")
+        print(solvePart2Brute(seeds, maps))
+        print(" ")
+    })
 }
 
 data class Range(
@@ -91,6 +105,25 @@ private fun solvePart2(seeds: List<BigInteger>, maps: Map<String, List<Range>>):
     }
     val res = seedsRanges.map { lookupSeedInMaps(it, maps) }
     return res.min()
+}
+
+private fun solvePart2Brute(seeds: List<BigInteger>, maps: Map<String, List<Range>>): BigInteger {
+    var i = 0
+    val seedsRanges = mutableListOf<Range>()
+    while (i < seeds.count()) {
+        seedsRanges.add(Range(seeds[i], seeds[i] + seeds[++i]))
+        i++
+    }
+    var res = 28809304000000.toBigInteger()
+    for (pair in seedsRanges) {
+        var k = pair.fromStart
+        while (k < pair.fromEnd) {
+            val t = lookupSeedInMaps(k, maps)
+            res = (BigInteger::min)(t, res)
+            k++
+        }
+    }
+    return res
 }
 
 fun splitRanges(first: Range, second: Range): List<Range> {
