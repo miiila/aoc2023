@@ -16,59 +16,55 @@ fun main() {
 //    println(input)
     val instructions = input[0]
     val map = parseMap(input.drop(2))
-//    println(solvePart1(instructions, map))
+    println(solvePart1(instructions, map))
     println(solvePart2(instructions, map))
 }
 
 // Part 1
 private fun solvePart1(instructions: String, map: Map<String, Pair<String, String>>): Long {
-    return getStepsToTarget("AAA", { it == "ZZZ" }, instructions, map).first
+    return getStepsToTarget("AAA", { it == "ZZZ" }, instructions, map)
 }
 
 // Part 2
 private fun solvePart2(instructions: String, map: Map<String, Pair<String, String>>): Long {
-    {}//    var steps = 0
-    var cur = map.keys.filter { it.endsWith('A') }.map { Pair(0.toLong(), it) }
     val dist =
-        map.keys.filter { it.endsWith('A') || it.endsWith('Z') }
+        map.keys.filter { it.endsWith('A') }
             .associateWith { getStepsToTarget(it, { it.endsWith('Z') }, instructions, map) }
 
-    while (true) {
-        val newCur = mutableListOf<Pair<Long, String>>()
-        while (cur.isNotEmpty()) {
-            val c = cur.removeFirst()
-            val new = dist[c.second]
-            val newDist = c.first + new!!.first
-            if (newCur.all { it.first == newDist } and cur.all { it.first == newDist }) {
-                return newDist
-            }
-            newCur.add(Pair(c.first + new.first, new.second))
-        }
-        cur = newCur
-    }
+    return dist.values.reduce(::getLcm)
 }
 
+fun getLcm(a: Long, b: Long): Long {
+    return (a * b) / getGcd(a, b)
+}
+
+fun getGcd(a: Long, b: Long): Long {
+    var x = a
+    var y = b
+    while (y > 0) {
+        x = y.also { y = x.mod(y) }
+    }
+
+    return x
+}
 
 fun getStepsToTarget(
     from: String,
     to: Predicate<String>,
     instructions: String,
     map: Map<String, Pair<String, String>>
-): Pair<Long, String> {
+): Long {
     var steps = 0.toLong()
     val ins = instructions.toMutableList()
     var cur = from
-    while (true) {
+    while (!to.test(cur)) {
         steps++
         val i = ins.removeFirst()
         cur = if (i == 'L') map[cur]!!.first else map[cur]!!.second
-        if (to.test(cur)) {
-            break
-        }
         ins.add(i)
     }
 
-    return Pair(steps, cur)
+    return steps
 
 }
 
