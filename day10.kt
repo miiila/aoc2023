@@ -62,23 +62,20 @@ private fun solvePart2(maze: List<List<Char>>): Int {
     } while (p1 != start)
 
     p1 = start
-    var res = 0
     var from = 'S'
     while (instructions.isNotEmpty()) {
         val ins = instructions.removeFirst()
         var rightHandDir = getInsideDirection(from)
         var cPos = Pair(p1.first + rightHandDir.first, p1.second + rightHandDir.second)
-        while (maze.getOrNull(cPos.second)?.getOrNull(cPos.first) !in listOf('*', null)) {
+        while (maze[cPos.second][cPos.first] != '*') {
             maze[cPos.second][cPos.first] = '$'
-            res++
             cPos = Pair(cPos.first + rightHandDir.first, cPos.second + rightHandDir.second)
         }
         from = ins.second.first()
         rightHandDir = getInsideDirection(from)
         cPos = Pair(p1.first + rightHandDir.first, p1.second + rightHandDir.second)
-        while (maze.getOrNull(cPos.second)?.getOrNull(cPos.first) !in listOf('*', null)) {
+        while (maze[cPos.second][cPos.first] != '*') {
             maze[cPos.second][cPos.first] = '$'
-            res++
             cPos = Pair(cPos.first + rightHandDir.first, cPos.second + rightHandDir.second)
         }
         p1 = Pair(p1.first + ins.first.first, p1.second + ins.first.second)
