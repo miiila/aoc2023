@@ -43,18 +43,8 @@ fun getCombinations(input: List<Pair<Long, Long>>): List<Pair<Pair<Long, Long>, 
 
 fun solve(input: List<Pair<Int, Int>>, emptyCols: Set<Int>, emptyRows: Set<Int>, expansion: Int): Long {
     val galaxies = input.map {
-        var newC = it.first.toLong()
-        var newR = it.second.toLong()
-        for (c in emptyCols) {
-            if (it.first > c) {
-                newC += expansion
-            }
-        }
-        for (r in emptyRows) {
-            if (it.second > r) {
-                newR += expansion
-            }
-        }
+        val newC = it.first.toLong() + (emptyCols.count { it2 -> it.first > it2 } * expansion)
+        val newR = it.second.toLong() + (emptyRows.count { it2 -> it.second > it2 } * expansion)
         Pair(newC, newR)
     }
     val galaxiesCombinations = getCombinations(galaxies)
