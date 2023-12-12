@@ -18,18 +18,17 @@ fun main() {
         { x: String -> x.split(" ").let { Pair(it.first().toList(), it.last().split(",").map(String::toInt)) } }
     val input = loadInput(DAY, false, transformer)
 
+    println(measureTime { println(solvePart1(input)) })
     var mem = Memo()
-    println(measureTime { println(solvePart1(input, mem)) })
-    mem = Memo()
     println(measureTime { println(solvePart2(input, mem)) })
 //  Breaks without mutext - concurrent access to mem
-//  mem = Memo()
-//  println(measureTime { println(solvePart2Coroutines(input, mem)) })
+    mem = Memo()
+    println(measureTime { println(solvePart2Coroutines(input, mem)) })
 //  println(measureTime { println(solvePart2Slow(input)) })
 }
 
 // Part 1
-private fun solvePart1(input: List<Pair<List<Char>, List<Int>>>, memo: Memo): Long {
+private fun solvePart1(input: List<Pair<List<Char>, List<Int>>>): Long {
     return input.sumOf(::solveRow)
 }
 
@@ -51,7 +50,10 @@ private fun solvePart2Coroutines(input: List<Pair<List<Char>, List<Int>>>, mem: 
         input.mapIndexed { i, inp ->
             async(Dispatchers.Default) {
                 var r: Long
-                println("${i}: ${measureTime { r = mem.solveRow(inp) }}")
+                // Requires mutex
+                // println("${i}: ${measureTime { r = mem.solveRow(inp) }}")
+                // Uses new memo for every row => doesn't require mutex
+                println("${i}: ${measureTime { r = Memo().solveRow(inp) }}")
                 r
             }
         }.awaitAll()
@@ -82,7 +84,7 @@ class Memo {
         if (input !in memo) {
             val r = input.first
             val g = input.second
-            if (r.isEmpty() && g.isNotEmpty()) {
+            if (r.count() < g.sum() + g.count() - 1) {
 //                mutex.withLock {
                 memo[input] = 0
 //                }
@@ -171,7 +173,7 @@ fun solveRowRec(input: Pair<List<Char>, List<Int>>, memo: Memo? = null): Long {
 fun solveRow(input: Pair<List<Char>, List<Int>>): Long {
     val r = input.first
     val g = input.second
-    if (r.isEmpty() && g.isNotEmpty()) {
+    if (r.count() < g.sum() + g.count() - 1) {
         return 0
     }
     if (g.isEmpty()) {
