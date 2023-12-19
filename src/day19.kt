@@ -11,11 +11,11 @@ fun main() {
     }
     val transformer = { x: String -> x }
     val input = parseWorkflowsAndParts(loadInput(DAY, false, transformer))
-
+    val graph = parseWorkflowsIntoGraph(loadInput(DAY, false, transformer))
 
 //    println(input)
     println(solvePart1(input))
-    solvePart2(input)
+    println(solvePart2(graph))
 }
 
 // Part 1
@@ -27,10 +27,61 @@ private fun solvePart1(input: Pair<Map<String, List<(part: Part) -> String?>>, L
 
 
 // Part 2
-private fun solvePart2(input: Pair<Map<String, List<(part: Part) -> String?>>, List<Part>>): Long {
-    val parts = mutableListOf<Part>()
-    val (workflows, _) = input
-    return 0L
+private fun solvePart2(graph: List<Pair<String, List<Pair<String, String?>>>>): Long {
+    val graph = graph.toMap()
+
+    val ranges = mutableMapOf(
+        'x' to (1..4000).toSet(),
+        'm' to (1..4000).toSet(),
+        'a' to (1..4000).toSet(),
+        's' to (1..4000).toSet()
+    )
+    val q = mutableListOf(Pair("in", ranges))
+    val res = mutableListOf<Map<Char, Set<Int>>>()
+    while (q.isNotEmpty()) {
+        val (node, ranges) = q.removeFirst()
+        val conds = graph[node]!!
+        for ((target, cond) in conds) {
+            if (target == "A") {
+                if (cond.isNullOrBlank()) {
+                    res.add(ranges)
+                    continue
+                }
+                val (c, condRange) = parseCondToRange(cond)
+                val newRanges = ranges.toMutableMap()
+                newRanges[c] = newRanges[c]!!.intersect(condRange)
+                res.add(newRanges)
+                ranges[c] = ranges[c]!!.minus(condRange)
+                continue
+            }
+            if (target == "R") {
+                if (cond.isNullOrBlank()) {
+                    continue
+                }
+                val (c, condRange) = parseCondToRange(cond)
+                ranges[c] = ranges[c]!!.minus(condRange)
+                continue
+            }
+            if (cond.isNullOrBlank()) {
+                q.add(Pair(target, ranges))
+                continue
+            }
+            val (c, condRange) = parseCondToRange(cond)
+            val newRanges = ranges.toMutableMap()
+            newRanges[c] = newRanges[c]!!.intersect(condRange)
+            q.add(Pair(target, newRanges))
+            ranges[c] = ranges[c]!!.minus(condRange)
+        }
+    }
+    return res.sumOf { it.values.fold(1L) { acc, ints -> acc * ints.count().toLong() } }
+}
+
+fun parseCondToRange(cond: String): Pair<Char, IntProgression> {
+    return when (cond[1]) {
+        '>' -> Pair(cond[0], (cond.drop(2).toInt() + 1..4000))
+        '<' -> Pair(cond[0], (1..<cond.drop(2).toInt()))
+        else -> error("BOOM")
+    }
 }
 
 fun solveState(
@@ -68,6 +119,14 @@ fun parseWorkflowsAndParts(input: List<String>): Pair<Map<String, List<(part: Pa
     return Pair(workflows, parts)
 }
 
+fun parseWorkflowsIntoGraph(input: List<String>):
+        List<Pair<String, List<Pair<String, String?>>>> {
+    val split = input.indexOfFirst { it.isEmpty() }
+    val workflows = input.slice(0..<split).map(::parseWorkflowIntoGraph)
+
+    return workflows
+}
+
 data class Part(val x: Int, val m: Int, val a: Int, val s: Int) {
     fun sum(): Int {
         return x + m + a + s
@@ -82,6 +141,25 @@ data class Part(val x: Int, val m: Int, val a: Int, val s: Int) {
             else -> error("BOOM")
         }
     }
+}
+
+fun parseWorkflowIntoGraph(
+    workflow: String,
+): Pair<String, List<Pair<String, String?>>> {
+    val workflow = workflow.split('{')
+    val source = workflow[0]
+    val targets = workflow[1].let { x ->
+        x.split(',').map { x ->
+            x.split(':').let { x ->
+                if (x.count() == 2) {
+                    Pair(x[1], x[0])
+                } else {
+                    Pair(x[0].dropLast(1), null)
+                }
+            }
+        }
+    }
+    return Pair(source, targets)
 }
 
 fun parseWorkflow(workflow: String): Pair<String, List<(part: Part) -> String?>> {
