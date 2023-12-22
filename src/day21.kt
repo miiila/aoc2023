@@ -1,6 +1,4 @@
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 import kotlin.system.exitProcess
 
 private const val DAY = 21
@@ -19,11 +17,11 @@ fun main() {
     println(solvePart2(input))
 }
 
-fun findStart(grid: List<List<Char>>): Pair<Int, Int> {
+fun findStart(grid: List<List<Char>>): Pos {
     for ((r, row) in grid.withIndex()) {
         for ((c, char) in row.withIndex()) {
             if (char == 'S') {
-                return Pair(r, c)
+                return Pos(r, c)
             }
         }
     }
@@ -34,10 +32,10 @@ fun findStart(grid: List<List<Char>>): Pair<Int, Int> {
 private fun solvePart1(input: List<List<Char>>): Int {
     val start = findStart(input)
     var currents = mutableListOf(start)
-    val mem = mutableMapOf<Pair<Int, Int>, Set<Pair<Int, Int>>>()
+    val mem = mutableMapOf<Pos, Set<Pos>>()
     var res = 0
     for (i in (1..64)) {
-        val nexts = mutableSetOf<Pair<Int, Int>>()
+        val nexts = mutableSetOf<Pos>()
         while (currents.isNotEmpty()) {
             val current = currents.removeFirst()
             if (current !in mem) {
@@ -52,14 +50,28 @@ private fun solvePart1(input: List<List<Char>>): Int {
     return res
 }
 
-fun getNextVisits(grid: List<List<Char>>, pos: Pair<Int, Int>): Set<Pair<Int, Int>> {
-    val nexts = mutableSetOf<Pair<Int, Int>>()
+fun getNextVisits(grid: List<List<Char>>, pos: Pos): Set<Pos> {
+    val nexts = mutableSetOf<Pos>()
     for (next in getNext(pos)) {
-        val nextPos = Pair(next.first.first `%` grid.count(), next.first.second `%` grid[0].count())
-        if (grid[nextPos.first][nextPos.second] == '#') {
+        val nextPos = Pos(next.row `%` grid.count(), next.col `%` grid[0].count())
+        if (grid[nextPos.row][nextPos.col] == '#') {
             continue
         }
         nexts.add(nextPos)
+    }
+    return nexts
+}
+
+fun getNextVisitsInf(grid: List<List<Char>>, pos: Pos, visited: Set<Pos>?): Set<Pos> {
+    val nexts = mutableSetOf<Pos>()
+    for (next in getNext(pos)) {
+        if (grid[next.row `%` grid.count()][next.col `%` grid[0].count()] == '#') {
+            continue
+        }
+        if (visited != null && next in visited) {
+            continue
+        }
+        nexts.add(next)
     }
     return nexts
 }
@@ -69,31 +81,109 @@ infix fun Int.`%`(divisor: Int): Int {
 }
 
 // Part 2
-private fun solvePart2(input: List<List<Char>>): Int {
+private fun solvePart2Slow(input: List<List<Char>>): Int {
     val start = findStart(input)
     var currents = mutableListOf(start)
-    val mem = mutableMapOf<Pair<Int, Int>, Set<Pair<Int, Int>>>()
-    var res = 0
-    val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
-    val currentDate = sdf.format(Date())
-    println("$currentDate: start")
-    for (i in (1..26501365)) {
-        if (i % 10000 == 0) {
-            val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
-            val currentDate = sdf.format(Date())
-            println("$currentDate: $i")
-        }
-        val nexts = mutableSetOf<Pair<Int, Int>>()
+    var counts = mutableMapOf<Int, Int>()
+    val visited = mutableSetOf<Pos>()
+    for (i in (1..1000)) {
+        val nexts = mutableSetOf<Pos>()
         while (currents.isNotEmpty()) {
             val current = currents.removeFirst()
-            if (current !in mem) {
-                mem[current] = getNextVisits(input, current)
+            visited.add(current)
+            for (next in getNextVisitsInf(input, current, null)) {
+                if (next !in visited) {
+                    nexts.add(next)
+                }
             }
-            nexts.addAll(mem[current]!!)
         }
         currents = nexts.toMutableList()
-        res = nexts.count()
+        counts[i] = nexts.count()
+    }
+
+    val isEven = counts.keys.last() % 2 == 0
+    var res = if (isEven) 1 else 0
+    res += if (isEven) {
+        counts.filter { (k, v) -> k % 2 == 0 }.values.sum()
+    } else {
+        counts.filter { (k, v) -> k % 2 == 1 }.values.sum()
     }
 
     return res
+}
+
+private fun solvePart2WIP(input: List<List<Char>>): Int {
+    val start = findStart(input)
+    var currents = setOf(start)
+    val visited = mutableSetOf<Pos>()
+    val mem = mutableMapOf<Set<Pos>, Int>()
+    val mem2 = mutableMapOf<Set<Pos>, Set<Pos>>()
+    var res = 0
+    for (i in (1..1000)) {
+        val nexts = mutableSetOf<Pos>()
+        println("Is seen? ${currents in mem}")
+//        if (currents !in mem) {
+        val iters = currents.toMutableList()
+        while (iters.isNotEmpty()) {
+            val current = iters.removeFirst()
+            visited.add(current)
+            for (next in getNextVisits(input, current)) {
+//                val nextMod = Pair(next.first `%` input.count(), next.second `%` input[0].count())
+                nexts.add(next)
+            }
+        }
+        mem[currents.toSet()] = nexts.count()
+//            mem2[currents.toSet()] = nexts
+        res = nexts.count()
+//        } else {
+        res = nexts.count()
+//        }
+        currents = nexts
+    }
+
+    return res
+}
+
+private fun solvePart2(input: List<List<Char>>): Int {
+    val start = findStart(input)
+    val mem: MutableMap<Set<Pos>, Set<Pos>> = mutableMapOf()
+    val visited = mutableSetOf<Pos>()
+    var q = mutableListOf<Pos>(start)
+    for (i in 0..26501365) {
+        if (i % 1000 == 0) {
+            println(i)
+        }
+        val newQ: MutableSet<Pos> = mutableSetOf()
+        while (q.isNotEmpty()) {
+            val current = q.removeFirst()
+            visited.add(current)
+            newQ.addAll(getNextVisitsInf(input, current, visited))
+        }
+        q = newQ.toMutableList()
+    }
+
+    return 0
+}
+
+
+data class Pos(val row: Int, var col: Int)
+
+fun getNextState(grid: List<List<Char>>, reach: Set<Pos>): Set<Pos> {
+    val nexts = mutableSetOf<Pos>()
+    for (current in reach) {
+        for (next in getNextVisits(grid, current)) {
+            nexts.add(next)
+        }
+    }
+
+    return nexts
+}
+
+fun getNext(pos: Pos): List<Pos> {
+    return listOf(
+        Pos(pos.row, pos.col + 1),
+        Pos(pos.row + 1, pos.col),
+        Pos(pos.row - 1, pos.col),
+        Pos(pos.row, pos.col - 1),
+    )
 }
