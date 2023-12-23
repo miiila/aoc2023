@@ -18,3 +18,23 @@ fun downloadInput(day: Int) {
         )
     }.getInputStream().use { File("./day${day}_input").writeBytes(it.readAllBytes()) }
 }
+
+data class Pos(val row: Int, var col: Int)
+
+fun getNext(pos: Pos): List<Pos> {
+    return listOf(
+        Pos(pos.row, pos.col + 1),
+        Pos(pos.row + 1, pos.col),
+        Pos(pos.row - 1, pos.col),
+        Pos(pos.row, pos.col - 1),
+    )
+}
+
+fun getNextWithDir(pos: Pos): List<Pair<Pos, Char>> {
+    return listOf(
+        Pair(Pos(pos.row, pos.col + 1), '>'),
+        Pair(Pos(pos.row + 1, pos.col), 'v'),
+        Pair(Pos(pos.row - 1, pos.col), '^'),
+        Pair(Pos(pos.row, pos.col - 1), '<'),
+    )
+}

@@ -166,8 +166,6 @@ private fun solvePart2(input: List<List<Char>>): Int {
 }
 
 
-data class Pos(val row: Int, var col: Int)
-
 fun getNextState(grid: List<List<Char>>, reach: Set<Pos>): Set<Pos> {
     val nexts = mutableSetOf<Pos>()
     for (current in reach) {
@@ -179,11 +177,3 @@ fun getNextState(grid: List<List<Char>>, reach: Set<Pos>): Set<Pos> {
     return nexts
 }
 
-fun getNext(pos: Pos): List<Pos> {
-    return listOf(
-        Pos(pos.row, pos.col + 1),
-        Pos(pos.row + 1, pos.col),
-        Pos(pos.row - 1, pos.col),
-        Pos(pos.row, pos.col - 1),
-    )
-}
